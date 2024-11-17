@@ -9,7 +9,7 @@ import math
 POPULATION_SIZE = 150
 MUTATION_RATE = 0.5
 CROSSOVER_RATE = 0.7
-GENERATIONS = 1000
+GENERATIONS = 100
 TOURNAMENT_SELECTION_SIZE = 3
 
 # Euclidean distance formula
@@ -18,7 +18,7 @@ def euclidean_distance(x1, y1, x2, y2):
 
 # Function to calculate the total distance for a given route
 def total_distance(route, locations):
-    print("Route", route)
+    # print("Route", route)
     total = 0
     for i in range(len(route)):
         start = route[i]
@@ -74,19 +74,33 @@ def evolve_population(population, locations):
         new_population.append([total_distance(mutate(child), locations), child])
     return sorted(new_population)
 
+def plot_metrics(distances, fitness_values):
+    plt.figure(figsize=(12, 5))
+
+    # Plot distances
+    plt.subplot(1, 2, 1)
+    plt.plot(distances, label='Distance')
+    plt.xlabel('Generation')
+    plt.ylabel('Distance (m)')
+    plt.title('Fittest Route Distance Over Generations')
+    plt.legend()
+
+    # Plot fitness values
+    plt.subplot(1, 2, 2)
+    plt.plot(fitness_values, label='Fitness', color='orange')
+    plt.xlabel('Generation')
+    plt.ylabel('Fitness')
+    plt.title('Fitness Over Generations')
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+
 # Main function
 def GA(selected_circle):
 
-    # area_coordinate = {}
-    # for i, circle in enumerate(selected_circle):
-    #     area_coordinate[f"Location {i+1}"] = {
-    #         'latitude': circle["center"][0],
-    #         'longitude': circle["center"][1]
-    #     }
-
-    # print("Area coordinate: ", area_coordinate)
-
-
+    print("Entering GA")
     locations = selected_circle
     population, fittest = select_population(locations, POPULATION_SIZE)
 
@@ -118,3 +132,10 @@ def GA(selected_circle):
     best_generation = fitness_values.index(max(fitness_values))
     best_fitness = max(fitness_values)
     print(f"Best fitness achieved at generation {best_generation} with fitness value {best_fitness:.2f}")
+
+    final_route =fittest[1]
+    coordinates = [(locations[route]['latitude'], locations[route]['longitude']) for route in final_route]
+    plot_metrics(distances, fitness_values)
+    print("Final Route :", coordinates)
+
+    return coordinates

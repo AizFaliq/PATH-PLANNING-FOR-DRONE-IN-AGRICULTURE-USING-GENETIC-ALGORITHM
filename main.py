@@ -1,7 +1,7 @@
 import math
 import random
 import matplotlib.pyplot as plt
-#import GApytorch
+import GA
 
 from functools import partial
 from shapely import wkt
@@ -208,20 +208,17 @@ shifted_polygon = ''
 selected_circle = []
 
 
-# main directory item
-# circle = {"center": (currentXNode, currentYNode), "radius": circleRad}
 
-
-
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 print("System Start ------------------------------------------------------------------------")
 
 # User input radius
-radius = 130
+radius = 10
 print("Circle radius : ", radius)
 
 # read file
-with open("tri.txt", "r") as file:
+with open("mapWKTfile.txt", "r") as file:
     wkt_data = file.read()
 
 # Set transformer from WGS84 to UTM Zone 48N
@@ -300,11 +297,60 @@ plt.show()
 
 
 circle_for_GA = {}
-for j, item in enumerate(circle_in, start=0):
+for j, item in enumerate(selected_circle, start=0):
     item_coor_x = item["center"][0]
     item_coor_y = item["center"][1]
     route_name = f"route {j + 1}"  # or any custom name
     circle_for_GA[route_name] = {'latitude': item_coor_x, 'longitude': item_coor_y}
 
 print(circle_for_GA)
-#GApytorch.GA(circle_for_GA)
+movement_coordinates = GA.GA(circle_for_GA)
+print("Check final route : ", movement_coordinates)
+
+
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Second Plot: Add Routes
+fig2, ax2 = plt.subplots()
+ax2.plot(shifted_x, shifted_y, color='blue', linewidth=2, label='Polygon')
+ax2.fill(shifted_x, shifted_y, color='lightblue', alpha=0.5)  # Fill the polygon with color
+
+# Plot the centroid
+ax2.plot(centroid_x, centroid_y, 'ro', label='Centroid')  # Red dot for centroid
+
+# Set the axis limits
+ax2.set_xlim(0, max(shifted_x) + padding)
+ax2.set_ylim(0, max(shifted_y) + padding)
+
+# Plot the circles
+for circle in circle_in:
+    if circle["is_tree"]:
+        circle_plot = plt.Circle(circle["center"], circle["radius"], color='red')
+    else:
+        circle_plot = plt.Circle(circle["center"], circle["radius"], color='green')
+    ax2.add_patch(circle_plot)
+
+
+# Extract route coordinates
+route_x = [coord[0] for coord in movement_coordinates]  # Longitude as X
+route_y = [coord[1] for coord in movement_coordinates]  # Latitude as Y
+
+print("route x ", route_x)
+print("route y ", route_y)
+# Plot routes
+ax2.scatter(route_x, route_y, color='purple', label='Route Points', zorder=5)
+ax2.plot(route_x, route_y, color='orange', linestyle='-', label='Route Path', zorder=4)
+
+# Add labels, title, and grid
+ax2.set_title("Polygon with Centroid, Circles, and Routes")
+ax2.set_xlabel("X (meters)")
+ax2.set_ylabel("Y (meters)")
+ax2.grid(True)
+ax2.legend()
+ax2.axis('equal')
+
+# Show the second plot
+plt.show()
+
+
