@@ -2,6 +2,7 @@ import math
 import random
 import matplotlib.pyplot as plt
 import GA
+import streamlit as st
 
 from functools import partial
 from shapely import wkt
@@ -146,48 +147,72 @@ def removeOuterCircle(centre_points, shifted_polygon):
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-# Define a function to handle mouse click events
+# Function to toggle tree status
 def on_click(event, gen_circle, patch):
-    # Check if the click is within the plot area
+    global selected_circle, mode
 
-    global selected_circle
+    if mode != "toggle_trees":
+        return  # Skip this function if not in toggle mode
 
     if event.inaxes:
-        # Get x and y coordinates of the click
         x, y = event.xdata, event.ydata
-        click_point = Point(x,y)
+        click_point = Point(x, y)
         print(f"Clicked at: x={x}, y={y}")
-        
-        # Iterate through circles and update color based on click
+
+        # Iterate through circles and toggle "is_tree"
         for i, circle in enumerate(gen_circle):
             circle_shape = Point(circle["center"]).buffer(circle["radius"])
-            
-            # Toggle "is_tree" status based on click position
+
             if circle_shape.contains(click_point):
-                circle["is_tree"] = not circle["is_tree"]  # Toggle status
+                circle["is_tree"] = not circle["is_tree"]
                 if circle["is_tree"]:
-                    # Add to selected_circle if `is_tree` is now True
                     if circle not in selected_circle:
                         selected_circle.append(circle)
                         print(f"Added circle: {circle}")
                 else:
-                    # Remove from selected_circle if `is_tree` is now False
                     if circle in selected_circle:
                         selected_circle.remove(circle)
                         print(f"Removed circle: {circle}")
-            
-            # Update color based on the updated "is_tree" status
-            new_color = 'red' if circle["is_tree"] else 'green'
-            patch[i].set_facecolor(new_color)  # Modify existing patch color
 
-        plt.draw()  # Redraw plot to apply color changes
-    
-    return selected_circle
+                # Update patch color
+                new_color = 'red' if circle["is_tree"] else 'green'
+                patch[i].set_facecolor(new_color)
 
-        
-        # Optionally, display the click position on the plot
-        # plt.plot(x, y, 'ro')  # red dot for clicked point
-        # plt.draw()  # update the plot to show the point
+        plt.draw()
+
+# Function to select start and end nodes
+def select_nodes(event, gen_circle, patch):
+    global start_node, end_node, mode
+
+    if mode != "select_nodes":
+        return  # Skip this function if not in node selection mode
+
+    if event.inaxes:
+        x, y = event.xdata, event.ydata
+        click_point = Point(x, y)
+        print(f"Clicked at: x={x}, y={y}")
+
+        # Iterate through circles to identify the clicked node
+        for i, circle in enumerate(gen_circle):
+            circle_shape = Point(circle["center"]).buffer(circle["radius"])
+
+            if circle_shape.contains(click_point):
+                circle["is_tree"] = not circle["is_tree"]
+                if start_node is None:
+                    start_node = circle
+                    selected_circle.append(circle)
+                    patch[i].set_facecolor('blue')  # Highlight start node
+                    print(f"Start node selected: {circle}")
+                elif end_node is None:
+                    end_node = circle
+                    selected_circle.append(circle)
+                    patch[i].set_facecolor('orange')  # Highlight end node
+                    print(f"End node selected: {circle}")
+                else:
+                    print("Both nodes already selected. Reset to select again.")
+                
+                plt.draw()
+                break
 
 
 
@@ -206,6 +231,9 @@ node = ''
 circle_within = ''
 shifted_polygon = ''
 selected_circle = []
+start_node = None
+end_node = None
+mode = "toggle_trees"  # Initial mode: "toggle_trees" or "select_nodes"
 
 
 
@@ -214,11 +242,11 @@ selected_circle = []
 print("System Start ------------------------------------------------------------------------")
 
 # User input radius
-radius = 10
+radius = 3
 print("Circle radius : ", radius)
 
 # read file
-with open("mapWKTfile.txt", "r") as file:
+with open("triangle.txt", "r") as file:
     wkt_data = file.read()
 
 # Set transformer from WGS84 to UTM Zone 48N
@@ -281,10 +309,50 @@ for circle in circle_in:
     ax.add_patch(circle_plot)
     patch.append(circle_plot)
 
+# Function to toggle mode
+def toggle_mode(new_mode):
+    global mode
+    mode = new_mode
+    print(f"Mode changed to: {mode}")
 
-# Correct use of partial to connect the function
-click_callback = partial(on_click, gen_circle = circle_in, patch = patch)
-fig.canvas.mpl_connect('button_press_event', click_callback)
+# Reset function to clear all selections
+def reset_all(gen_circle, patch):
+    global selected_circle, start_node, end_node
+    selected_circle.clear()
+    start_node = None
+    end_node = None
+    print("Reset: Cleared selected circles and start/end nodes.")
+    
+    # Reset colors for all circles
+    for i, circle in enumerate(gen_circle):
+        patch[i].set_facecolor('green')  # Default color for all circles
+    plt.draw()
+
+# Connect functions to the canvas
+fig.canvas.mpl_connect('button_press_event', partial(on_click, gen_circle=circle_in, patch=patch))
+fig.canvas.mpl_connect('button_press_event', partial(select_nodes, gen_circle=circle_in, patch=patch))
+
+# Add buttons or keyboard commands to toggle modes
+from matplotlib.widgets import Button
+
+# Define button for toggling modes
+def switch_to_toggle(event):
+    toggle_mode("toggle_trees")
+
+def switch_to_select(event):
+    toggle_mode("select_nodes")
+
+ax_button_toggle = plt.axes([0.7, 0.05, 0.1, 0.075])  # Position of the button
+button_toggle = Button(ax_button_toggle, 'Toggle Trees')
+button_toggle.on_clicked(switch_to_toggle)
+
+ax_button_select = plt.axes([0.81, 0.05, 0.1, 0.075])
+button_select = Button(ax_button_select, 'Select Nodes')
+button_select.on_clicked(switch_to_select)
+
+ax_button_reset = plt.axes([0.59, 0.05, 0.1, 0.075])  # Position of the "Reset" button
+button_reset = Button(ax_button_reset, 'Reset')
+button_reset.on_clicked(lambda event: reset_all(circle_in, patch))
 
 # Add title, labels, and grid
 ax.set_title("Polygon with Centroid and Circles in Positive Quadrant")
@@ -295,16 +363,21 @@ ax.legend()
 ax.axis('equal')
 plt.show()
 
-
+# insert circle_in for all circles, or selected_circle for selected circles
 circle_for_GA = {}
 for j, item in enumerate(selected_circle, start=0):
     item_coor_x = item["center"][0]
     item_coor_y = item["center"][1]
     route_name = f"route {j + 1}"  # or any custom name
     circle_for_GA[route_name] = {'latitude': item_coor_x, 'longitude': item_coor_y}
+    if item["center"][0] == start_node["center"][0] and item["center"][1] == start_node["center"][1]:
+        starting_node = route_name
+    elif item["center"][0] == end_node["center"][0] and item["center"][1] == end_node["center"][1]:
+        ending_node = route_name
+
 
 print(circle_for_GA)
-movement_coordinates = GA.GA(circle_for_GA)
+movement_coordinates = GA.GA(circle_for_GA, starting_node, ending_node)
 print("Check final route : ", movement_coordinates)
 
 

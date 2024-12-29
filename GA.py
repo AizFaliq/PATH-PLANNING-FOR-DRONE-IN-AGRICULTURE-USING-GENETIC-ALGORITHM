@@ -4,12 +4,13 @@
 import random
 import matplotlib.pyplot as plt
 import math
+from shapely.geometry import LineString
 
 # Parameters
-POPULATION_SIZE = 150
+POPULATION_SIZE = 500
 MUTATION_RATE = 0.5
 CROSSOVER_RATE = 0.7
-GENERATIONS = 100
+GENERATIONS = 1000
 TOURNAMENT_SELECTION_SIZE = 3
 
 # Euclidean distance formula
@@ -27,20 +28,38 @@ def total_distance(route, locations):
                            locations[end]['latitude'], locations[end]['longitude'])
     return total
 
+def has_overlapping_edges(route, locations):
+    edges = [
+        LineString([
+            (locations[route[i]]['longitude'], locations[route[i]]['latitude']),
+            (locations[route[(i + 1) % len(route)]]['longitude'], locations[route[(i + 1) % len(route)]]['latitude'])
+        ])
+        for i in range(len(route))
+    ]
+    for i, edge1 in enumerate(edges):
+        for j, edge2 in enumerate(edges):
+            if i != j and edge1.crosses(edge2):
+                return True
+    return False
+
 # Fitness function
-def fitness(route,locations):
+def fitness(route, locations):
     distance = total_distance(route, locations)
-    return 1 / distance if distance != 0 else float('inf')
+    overlap_penalty = 1e6 if has_overlapping_edges(route, locations) else 0
+    return 1 / (distance + overlap_penalty) if distance != 0 else float('inf')
 
 # Function to select the population
-def select_population(locations, size):
+def select_population(locations, size, start_node, end_node):
     population = []
     for _ in range(size):
         route = list(locations.keys())
-        random.shuffle(route)
+        route.remove(start_node)  # Exclude start node
+        route.remove(end_node)  # Exclude end node
+        random.shuffle(route)  # Shuffle remaining nodes
+        route = [start_node] + route + [end_node]  # Fix start and end nodes
         distance = total_distance(route, locations)
         population.append([distance, route])
-    population = sorted(population)
+    population = sorted(population, key=lambda x: x[0])
     fittest = population[0]
     return population, fittest
 
@@ -70,9 +89,32 @@ def evolve_population(population, locations):
     for _ in range(POPULATION_SIZE):
         parent1 = tournament_selection(population)[1]
         parent2 = tournament_selection(population)[1]
-        child = crossover(parent1, parent2) if random.random() < CROSSOVER_RATE else parent1.copy()
-        new_population.append([total_distance(mutate(child), locations), child])
+        
+        # Extract start and end routes
+        start_route = parent1[0]
+        end_route = parent1[-1]
+        
+        # Remove start and end from parent routes
+        core_parent1 = parent1[1:-1]
+        core_parent2 = parent2[1:-1]
+        
+        # Perform crossover or copy
+        if random.random() < CROSSOVER_RATE:
+            child_core = crossover(core_parent1, core_parent2)
+        else:
+            child_core = core_parent1.copy()
+        
+        # Mutate the middle part
+        mutated_child_core = mutate(child_core)
+        
+        # Reattach start and end routes
+        child = [start_route] + mutated_child_core + [end_route]
+        
+        # Calculate the total distance
+        new_population.append([total_distance(child, locations), child])
+    
     return sorted(new_population)
+
 
 def plot_metrics(distances, fitness_values):
     plt.figure(figsize=(12, 5))
@@ -98,11 +140,11 @@ def plot_metrics(distances, fitness_values):
 
 
 # Main function
-def GA(selected_circle):
+def GA(selected_circle, start_node, end_node):
 
     print("Entering GA")
     locations = selected_circle
-    population, fittest = select_population(locations, POPULATION_SIZE)
+    population, fittest = select_population(locations, POPULATION_SIZE, start_node, end_node)
 
     print(f"Initial fittest route: {fittest[1]} with distance: {fittest[0]:.2f} m and fitness: {fitness(fittest[1], locations):.2f}")
 
@@ -111,23 +153,13 @@ def GA(selected_circle):
 
     for generation in range(GENERATIONS):
         population = evolve_population(population, locations)
+        population.sort(key=lambda x: x[0])
         fittest = population[0]
         distances.append(fittest[0])
         fitness_values.append(fitness(fittest[1], locations))
 
     print(f"Final fittest route: {fittest[1]} with distance: {fittest[0]:.2f} m and fitness: {fitness(fittest[1], locations):.2f}")
 
-    plt.plot(distances)
-    plt.xlabel('Generation')
-    plt.ylabel('Distance (m)')
-    plt.title('Fittest Route Distance Over Generations')
-    plt.show()
-
-    plt.plot(fitness_values)
-    plt.xlabel('Generation')
-    plt.ylabel('Fitness')
-    plt.title('Fitness Over Generations')
-    plt.show()
 
     best_generation = fitness_values.index(max(fitness_values))
     best_fitness = max(fitness_values)
