@@ -3,7 +3,9 @@ import random
 import matplotlib.pyplot as plt
 import GA
 import streamlit as st
+import tkinter as tk
 
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from functools import partial
 from shapely import wkt
 from shapely.geometry import Point, Polygon
@@ -426,4 +428,20 @@ ax2.axis('equal')
 # Show the second plot
 plt.show()
 
+
+import customtkinter as ctk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+
+# generate root
+root = ctk.CTk()
+root.geometry("800x400")
+
+fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0, hspace=0)
+canvas = FigureCanvasTkAgg(fig,master=root)
+canvas.draw()
+canvas.get_tk_widget().place(relx=0.15, rely=0.15)
+
+# initiate the window
+root.mainloop()
 
