@@ -7,10 +7,10 @@ import math
 from shapely.geometry import LineString
 
 # Parameters
-POPULATION_SIZE = 500
+POPULATION_SIZE = 100
 MUTATION_RATE = 0.5
 CROSSOVER_RATE = 0.7
-GENERATIONS = 1000
+GENERATIONS = 500
 TOURNAMENT_SELECTION_SIZE = 3
 
 # Euclidean distance formula
@@ -46,7 +46,8 @@ def has_overlapping_edges(route, locations):
 def fitness(route, locations):
     distance = total_distance(route, locations)
     overlap_penalty = 1e6 if has_overlapping_edges(route, locations) else 0
-    return 1 / (distance + overlap_penalty) if distance != 0 else float('inf')
+    fitness_value = 1 / (distance+overlap_penalty) if distance != 0 else float('inf')
+    return fitness_value
 
 # Function to select the population
 def select_population(locations, size, start_node, end_node):
@@ -146,7 +147,7 @@ def GA(selected_circle, start_node, end_node):
     locations = selected_circle
     population, fittest = select_population(locations, POPULATION_SIZE, start_node, end_node)
 
-    print(f"Initial fittest route: {fittest[1]} with distance: {fittest[0]:.2f} m and fitness: {fitness(fittest[1], locations):.2f}")
+    print(f"Initial fittest route: {fittest[1]} with distance: {fittest[0]:.2f} m and fitness: {fitness(fittest[1], locations):.6f}")
 
     distances = [fittest[0]]
     fitness_values = [fitness(fittest[1], locations)]
@@ -157,13 +158,14 @@ def GA(selected_circle, start_node, end_node):
         fittest = population[0]
         distances.append(fittest[0])
         fitness_values.append(fitness(fittest[1], locations))
-
-    print(f"Final fittest route: {fittest[1]} with distance: {fittest[0]:.2f} m and fitness: {fitness(fittest[1], locations):.2f}")
+        
+    fitness_value = fitness(fittest[1], locations) * 1e6
+    print(f"Final fittest route: {fittest[1]} with distance: {fittest[0]:.2f} m and fitness: {fitness_value:.6f} ")
 
 
     best_generation = fitness_values.index(max(fitness_values))
-    best_fitness = max(fitness_values)
-    print(f"Best fitness achieved at generation {best_generation} with fitness value {best_fitness:.2f}")
+    best_fitness = max(fitness_values) * 1e6
+    print(f"Best fitness achieved at generation {best_generation} with fitness value {best_fitness:.6f}")
 
     final_route =fittest[1]
     coordinates = [(locations[route]['latitude'], locations[route]['longitude']) for route in final_route]

@@ -2,8 +2,6 @@ import math
 import random
 import matplotlib.pyplot as plt
 import GA
-import streamlit as st
-import tkinter as tk
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from functools import partial
@@ -248,7 +246,7 @@ radius = 3
 print("Circle radius : ", radius)
 
 # read file
-with open("triangle.txt", "r") as file:
+with open("irregular.txt", "r") as file:
     wkt_data = file.read()
 
 # Set transformer from WGS84 to UTM Zone 48N
@@ -283,9 +281,6 @@ print("Center y-axis : ", centroid_y)
 fig, ax = plt.subplots()
 ax.plot(shifted_x, shifted_y, color='blue', linewidth=2, label='Polygon')
 ax.fill(shifted_x, shifted_y, color='lightblue', alpha=0.5)  # Fill the polygon with color
-
-# Plot the centroid
-ax.plot(centroid_x, centroid_y, 'ro', label='Centroid')  # Red dot for centroid
 
 # Set the axis limits based on the bounding box and padding
 padding = 5  # meters
@@ -391,9 +386,6 @@ fig2, ax2 = plt.subplots()
 ax2.plot(shifted_x, shifted_y, color='blue', linewidth=2, label='Polygon')
 ax2.fill(shifted_x, shifted_y, color='lightblue', alpha=0.5)  # Fill the polygon with color
 
-# Plot the centroid
-ax2.plot(centroid_x, centroid_y, 'ro', label='Centroid')  # Red dot for centroid
-
 # Set the axis limits
 ax2.set_xlim(0, max(shifted_x) + padding)
 ax2.set_ylim(0, max(shifted_y) + padding)
@@ -429,19 +421,5 @@ ax2.axis('equal')
 plt.show()
 
 
-import customtkinter as ctk
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-
-# generate root
-root = ctk.CTk()
-root.geometry("800x400")
-
-fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0, hspace=0)
-canvas = FigureCanvasTkAgg(fig,master=root)
-canvas.draw()
-canvas.get_tk_widget().place(relx=0.15, rely=0.15)
-
-# initiate the window
-root.mainloop()
 
