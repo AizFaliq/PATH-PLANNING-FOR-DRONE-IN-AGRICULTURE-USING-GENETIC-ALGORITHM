@@ -327,7 +327,48 @@ if __name__ == "__main__":
         print(starting_node)
         print(ending_node)
         print(circle_for_GA)
-        path = GA.GA(circle_for_GA, starting_node, ending_node)
+        movement_coordinates = GA.GA(circle_for_GA, starting_node, ending_node)
+
+        #Second Plot: Add Routes
+        fig2, ax2 = plt.subplots()
+        ax2.plot(shifted_x, shifted_y, color='blue', linewidth=2, label='Polygon')
+        ax2.fill(shifted_x, shifted_y, color='lightblue', alpha=0.5)  # Fill the polygon with color
+
+        # Set the axis limits
+        ax2.set_xlim(0, max(shifted_x) + padding)
+        ax2.set_ylim(0, max(shifted_y) + padding)
+
+        # Plot the circles
+        for circle in circle_in:
+            if circle["is_tree"]:
+                circle_plot = plt.Circle(circle["center"], circle["radius"], color='red')
+            else:
+                circle_plot = plt.Circle(circle["center"], circle["radius"], color='green')
+            ax2.add_patch(circle_plot)
+
+
+        # Extract route coordinates
+        route_x = [coord[0] for coord in movement_coordinates]  # Longitude as X
+        route_y = [coord[1] for coord in movement_coordinates]  # Latitude as Y
+
+        print("route x ", route_x)
+        print("route y ", route_y)
+        # Plot routes
+        ax2.scatter(route_x, route_y, color='purple', label='Route Points', zorder=5)
+        ax2.plot(route_x, route_y, color='orange', linestyle='-', label='Route Path', zorder=4)
+
+        # Add labels, title, and grid
+        ax2.set_title("Polygon with Centroid, Circles, and Routes")
+        ax2.set_xlabel("X (meters)")
+        ax2.set_ylabel("Y (meters)")
+        ax2.grid(True)
+        ax2.legend()
+        ax2.axis('equal')
+
+        # Embed the graph in the Tkinter container
+        canvas = FigureCanvasTkAgg(fig2, master=section3)
+        canvas.get_tk_widget().pack()
+        canvas.draw()
 
     # Function to switch modes
     def set_mode(new_mode):
@@ -370,33 +411,7 @@ if __name__ == "__main__":
 
     #|------------------------------------------------------------------------------------------------------------------
 
-    # Navigation frame (fixed width)
-    nav_frame = ctk.CTkFrame(app, width=250, corner_radius=0)
-    nav_frame.pack(side="left", fill="y", padx=10, pady=10)
-
-    # Section 1: Choose Shape
-    shape_label = ctk.CTkLabel(nav_frame, text="Choose Shape", font=("Arial", 18, "bold"))
-    shape_label.pack(pady=(20, 10))
-
-    shape_buttons = ["Rectangular", "Triangle", "Irregular"]
-    for btn in shape_buttons:
-        button = ctk.CTkButton(nav_frame, text=btn, corner_radius=10, fg_color="#2E8B57")
-        button.pack(pady=5, padx=20, fill="x")
-        button.bind("<Enter>", lambda event, button=button: on_hover(button))  # On hover
-        button.bind("<Leave>", lambda event, button=button: on_leave(button))  # On leave
-        button.configure(command=lambda b=btn: set_map_shape_and_action(b))  # On button click
-
-    # Section 2: Select Spray Radius
-    radius_label = ctk.CTkLabel(nav_frame, text="Select Spray Radius", font=("Arial", 18, "bold"))
-    radius_label.pack(pady=(40, 10))
-
-    radius_buttons = ["Small", "Medium", "Large"]
-    for btn in radius_buttons:
-        button = ctk.CTkButton(nav_frame, text=btn, corner_radius=10, fg_color="#2E8B57")
-        button.pack(pady=5, padx=20, fill="x")
-        button.bind("<Enter>", lambda event, button=button: on_hover(button))  # On hover
-        button.bind("<Leave>", lambda event, button=button: on_leave(button))  # On leave
-        button.configure(command=lambda b=btn: on_spray_selected(b))  # On button click
+    
 
     # Scrollable main frame
     main_frame = ctk.CTkScrollableFrame(app, corner_radius=0)
@@ -543,7 +558,7 @@ if __name__ == "__main__":
     toggle_button.bind("<Leave>", lambda event, button=toggle_button: on_leave(toggle_button))  # On leave
 
     select_button = ctk.CTkButton(
-        master=buttons_frame, text="Select Nodes",
+        master=buttons_frame, text="Start/End",
         command=lambda: set_mode("select_nodes"),
         corner_radius=10, 
         height=40, 

@@ -137,7 +137,7 @@ def plot_metrics(distances, fitness_values):
     plt.legend()
 
     plt.tight_layout()
-    plt.show()
+    
 
 
 # Main function

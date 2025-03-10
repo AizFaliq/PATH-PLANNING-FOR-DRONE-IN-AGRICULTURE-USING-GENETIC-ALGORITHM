@@ -11,11 +11,11 @@ def main():
     root.geometry("600x400")
     
     # Add a label
-    label = ctk.CTkLabel(root, text="Welcome to CustomTkinter", font=("Arial", 18))
+    label = ctk.CTkLabel(root, text="Drone Path Planning", font=("Arial", 18))
     label.pack(pady=20)
     
     # Add dropdown menus
-    map_shape_var = ctk.StringVar(value="Select available map shape")
+    map_shape_var = ctk.StringVar(value="Select map shape")
     map_shape_dropdown = ctk.CTkComboBox(root, values=["Triangle", "Rectangle", "Irregular"], variable=map_shape_var)
     map_shape_dropdown.pack(pady=10)
     
